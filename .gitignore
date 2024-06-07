@@ -1,0 +1,8 @@
+# Ignore binary files
+snap-it
+
+# Ignore Object files
+*.o
+
+# Ignore dependency directories
+venv/

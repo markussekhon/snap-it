@@ -1,6 +1,6 @@
-# Project Title
+# snap-it
 
-A brief description of what this project does and who it's for.
+snap-it is a cli tool for taking screenshots
 
 ## Table of Contents
 
@@ -18,3 +18,8 @@ To install this project, follow these steps:
 git clone https://github.com/sleepingspectator/snap-it.git
 cd snap-it
 
+
+## Usage
+
+```bash
+./snap-it snap
