@@ -6,3 +6,6 @@ snap-it
 
 # Ignore dependency directories
 venv/
+
+# Ignore screenshot file
+screenshot.ppm
