@@ -6,7 +6,6 @@
 #include "snap_it.h"
 
 void takeScreenshot() {
-	// placeholder
 	
 	Display *display = XOpenDisplay(NULL);
 
@@ -17,28 +16,17 @@ void takeScreenshot() {
 
 	int screen = DefaultScreen(display);
 	Window root = RootWindow(display, screen);
-	
-	XWindowAttributes window_attributes;
-	XGetWindowAttributes(display, root, &window_attributes);
-	int width = window_attributes.width;
-	int height = window_attributes.height;
-	
-	Window window = XCreateSimpleWindow(display, root, 0, 0, width, height, 0, 0, 0);
 
-	XSelectInput(display, window, KeyPressMask | ButtonPressMask | ButtonReleaseMask);
+	XGrabPointer(display, root, False, ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
+			GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
 
-	int x1,x2,y1,y2;
+	XGrabKeyboard(display, root, False, GrabModeAsync, GrabModeAsync, CurrentTime);
 
-	printf("outside penor\n");
-
-	XMapWindow(display, window);
+	int x1 = 0, x2 = 0, y1 = 0, y2 = 0;
 
 	while(1){
 		XEvent event;
-		
-		printf("inbetween penor\n");
-		XNextEvent(display, &event);
-		printf("unknown location penor\n");
+		XNextEvent(display, &event);	
 
 		if(event.type == ButtonPress && event.xbutton.button == Button1){
 			x1 = event.xbutton.x;
@@ -52,26 +40,41 @@ void takeScreenshot() {
 		}
 
 		else if(event.xkey.keycode == 27 || event.xbutton.button == Button3){
+			XUngrabPointer(display, CurrentTime);
+			XUngrabKeyboard(display, CurrentTime);
+			XCloseDisplay(display);
 			exit(0);
 		}
-		printf("inside penor\n");
+
 	}
+
+	XUngrabPointer(display, CurrentTime);
+	XUngrabKeyboard(display, CurrentTime);
 
 
 	printf("1(X,Y):(%d,%d)\n", x1, y1);
 	printf("2(X,Y):(%d,%d)\n", x2, y2);
-	
 
-	XImage *image = XGetImage(display, root, x1, y1, x2, y2, AllPlanes, ZPixmap);
+	XImage *image;
+
+	// this solution only considers 2 styles of box making when there are in fact 4
+	// more elegant solution to come
+
+	x2 -= x1;
+	y2 -= y1;
+
+	image = XGetImage(display, root, x1, y1, x2, y2, AllPlanes, ZPixmap);
+
+	}
 
 	if (image == NULL) {
 		fprintf(stderr, "Unable to capture image.\n");
+		XCloseDisplay(display);
 		exit(1);
 	}
 
 	printf("image captured\n");
 
-	/*
 	FILE *fp = fopen("screenshot.ppm", "wb");
 	
 	if (fp == NULL) {
@@ -80,10 +83,10 @@ void takeScreenshot() {
 	}
 
 	
-	fprintf(fp, "P6\n%d %d\n255\n", width, height);
+	fprintf(fp, "P6\n%d %d\n255\n", x2, y2);
 
-    	for (int y = 0; y < height; y++) {
-        	for (int x = 0; x < width; x++) {
+    	for (int y = 0; y < y2; y++) {
+        	for (int x = 0; x < x2; x++) {
             	unsigned long pixel = XGetPixel(image, x, y);
             	fputc((pixel & image->red_mask) >> 16, fp);
             	fputc((pixel & image->green_mask) >> 8, fp);
@@ -93,7 +96,6 @@ void takeScreenshot() {
 
 	fclose(fp);
 
-	*/
 
 	XDestroyImage(image);
 	XCloseDisplay(display);
