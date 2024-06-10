@@ -8,7 +8,7 @@
 void takeScreenshot() {
 
 	Display *display;
-	int screen, x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+	int screen, x1 = 0, x2 = 0, y1 = 0, y2 = 0, width = 0, height = 0;
 	Window root;
 	XImage *image;
 
@@ -42,7 +42,6 @@ void takeScreenshot() {
 			break;
 		}
 
-		//esc key doesnt work here for some reason
 		else if(event.xkey.keycode == 9 || event.xbutton.button == Button3){
 			XUngrabPointer(display, CurrentTime);
 			XUngrabKeyboard(display, CurrentTime);
@@ -59,13 +58,13 @@ void takeScreenshot() {
 	printf("1(X,Y):(%d,%d)\n", x1, y1);
 	printf("2(X,Y):(%d,%d)\n", x2, y2);
 
-	// this solution only considers 2 styles of box making when there are in fact 4
-	// more elegant solution to come
+	//calculate width and height
+	width = abs(x2-x1);
+	height = abs(y2-y1);
+	x1 = x1 < x2 ? x1 : x2;
+	y1 = y1 < y2 ? y1 : y2;
 
-	x2 -= x1;
-	y2 -= y1;
-
-	image = XGetImage(display, root, x1, y1, x2, y2, AllPlanes, ZPixmap);
+	image = XGetImage(display, root, x1, y1, width, height, AllPlanes, ZPixmap);
 
 	if (image == NULL) {
 		fprintf(stderr, "Unable to capture image.\n");
@@ -83,10 +82,10 @@ void takeScreenshot() {
 	}
 
 	
-	fprintf(fp, "P6\n%d %d\n255\n", x2, y2);
+	fprintf(fp, "P6\n%d %d\n255\n", width, height);
 
-    	for (int y = 0; y < y2; y++) {
-        	for (int x = 0; x < x2; x++) {
+    	for (int y = 0; y < height; y++) {
+        	for (int x = 0; x < width; x++) {
             	unsigned long pixel = XGetPixel(image, x, y);
             	fputc((pixel & image->red_mask) >> 16, fp);
             	fputc((pixel & image->green_mask) >> 8, fp);
