@@ -6,23 +6,26 @@
 #include "snap_it.h"
 
 void takeScreenshot() {
-	
-	Display *display = XOpenDisplay(NULL);
+
+	Display *display;
+	int screen, x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+	Window root;
+	XImage *image;
+
+	display = XOpenDisplay(NULL);
 
 	if (display == NULL){
 		fprintf(stderr, "Issue creating a connection to the X server.\n");
 		exit(1);
 	}
 
-	int screen = DefaultScreen(display);
-	Window root = RootWindow(display, screen);
+	screen = DefaultScreen(display);
+	root = RootWindow(display, screen);
 
 	XGrabPointer(display, root, False, ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
 			GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
 
 	XGrabKeyboard(display, root, False, GrabModeAsync, GrabModeAsync, CurrentTime);
-
-	int x1 = 0, x2 = 0, y1 = 0, y2 = 0;
 
 	while(1){
 		XEvent event;
@@ -39,7 +42,8 @@ void takeScreenshot() {
 			break;
 		}
 
-		else if(event.xkey.keycode == 27 || event.xbutton.button == Button3){
+		//esc key doesnt work here for some reason
+		else if(event.xkey.keycode == 9 || event.xbutton.button == Button3){
 			XUngrabPointer(display, CurrentTime);
 			XUngrabKeyboard(display, CurrentTime);
 			XCloseDisplay(display);
@@ -55,8 +59,6 @@ void takeScreenshot() {
 	printf("1(X,Y):(%d,%d)\n", x1, y1);
 	printf("2(X,Y):(%d,%d)\n", x2, y2);
 
-	XImage *image;
-
 	// this solution only considers 2 styles of box making when there are in fact 4
 	// more elegant solution to come
 
@@ -64,8 +66,6 @@ void takeScreenshot() {
 	y2 -= y1;
 
 	image = XGetImage(display, root, x1, y1, x2, y2, AllPlanes, ZPixmap);
-
-	}
 
 	if (image == NULL) {
 		fprintf(stderr, "Unable to capture image.\n");
