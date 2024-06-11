@@ -44,17 +44,14 @@ void takeScreenshot() {
 			y2 = event.xbutton.y;
 
 			if (x1 == x2 && y1 == y2){
-				printf("1\n");
-
 				Window parent;
 				int rx, ry, wx, wy;
 				unsigned int mr;
 
 				XQueryPointer(display, root, &parent, &child, 
 						&rx, &ry, &wx, &wy, &mr);
-				printf("2\n");
+
 				XGetWindowAttributes(display, child, &windowAttributes);
-				printf("3\n");
 
 				x1 = windowAttributes.x;
 				y1 = windowAttributes.y;
