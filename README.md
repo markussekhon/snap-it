@@ -1,6 +1,6 @@
 # snap-it
 
-snap-it is a cli tool for taking screenshots
+snap-it is a tool for taking screenshots on linux running X11
 
 ## Table of Contents
 
@@ -17,9 +17,10 @@ To install this project, follow these steps:
 ```bash
 git clone https://github.com/sleepingspectator/snap-it.git
 cd snap-it
+make
 
 
 ## Usage
 
 ```bash
-./snap-it snap
+./snap-it
