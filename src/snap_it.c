@@ -5,12 +5,71 @@
 #include <X11/Xutil.h>
 #include "snap_it.h"
 
+void calculateXY(Display *display, Window root, int *x, int *y, int *width, int *height) {
+
+	int x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+
+	XGrabPointer(display, root, False, ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
+			GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
+
+	XGrabKeyboard(display, root, False, GrabModeAsync, GrabModeAsync, CurrentTime);
+
+	while(1){
+		XEvent event;
+		XNextEvent(display, &event);
+
+		if(event.type == ButtonPress && event.xbutton.button == Button1){
+			x1 = event.xbutton.x;
+			y1 = event.xbutton.y;
+		}
+
+		else if(event.type == ButtonRelease && event.xbutton.button == Button1){
+			x2 = event.xbutton.x;
+			y2 = event.xbutton.y;
+
+			if (x1 == x2 && y1 == y2){
+				Window parent, child;
+				int rx, ry, wx, wy;
+				unsigned int mr;
+				XWindowAttributes windowAttributes;
+
+				XQueryPointer(display, root, &parent, &child, 
+						&rx, &ry, &wx, &wy, &mr);
+
+				XGetWindowAttributes(display, child, &windowAttributes);
+			
+				*x = windowAttributes.x;
+				*y = windowAttributes.y;
+				*width = windowAttributes.width;
+				*height = windowAttributes.height;
+			}else {
+				*width = abs(x2-x1);
+				*height = abs(y2-y1);
+				*x = x1 < x2 ? x1 : x2;
+				*y = y1 < y2 ? y1 : y2;
+			}
+			break;
+		}
+
+		else if(event.xkey.keycode == 9 || event.xbutton.button == Button3){
+			XUngrabPointer(display, CurrentTime);
+			XUngrabKeyboard(display, CurrentTime);
+			XCloseDisplay(display);
+			exit(0);
+		}
+
+	}
+
+	XUngrabPointer(display, CurrentTime);
+	XUngrabKeyboard(display, CurrentTime);
+
+}
+
 void takeScreenshot() {
 
 	Display *display;
-	int screen, x1 = 0, x2 = 0, y1 = 0, y2 = 0, width = 0, height = 0;
-	Window root, child;
-	XWindowAttributes windowAttributes;
+	int screen, x = 0, y = 0, width = 0, height = 0;
+	Window root;
 	XImage *image;
 
 	display = XOpenDisplay(NULL);
@@ -24,6 +83,8 @@ void takeScreenshot() {
 	root = RootWindow(display, screen);
 
 	//start of refactor into queryuser
+
+	/*
 
 	XGrabPointer(display, root, False, ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
 			GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
@@ -52,7 +113,7 @@ void takeScreenshot() {
 						&rx, &ry, &wx, &wy, &mr);
 
 				XGetWindowAttributes(display, child, &windowAttributes);
-
+			
 				x1 = windowAttributes.x;
 				y1 = windowAttributes.y;
 				width = windowAttributes.width;
@@ -78,10 +139,14 @@ void takeScreenshot() {
 	XUngrabPointer(display, CurrentTime);
 	XUngrabKeyboard(display, CurrentTime);
 
+	*/
+
+	calculateXY(display, root, &x, &y, &width, &height);
+
 	//end of refactor into queryuser
 
 
-	image = XGetImage(display, root, x1, y1, width, height, AllPlanes, ZPixmap);
+	image = XGetImage(display, root, x, y, width, height, AllPlanes, ZPixmap);
 
 	if (image == NULL) {
 		fprintf(stderr, "Unable to capture image.\n");
