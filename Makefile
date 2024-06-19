@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -Iinclude
-LDFLAGS = -lX11 -lXext
+LDFLAGS = -lX11 -lXext -lXrandr
 SRC = src/snap_it.c
 OBJ = $(SRC:.c=.o)
 EXEC = snap-it

@@ -3,7 +3,16 @@
 #include <string.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/extensions/Xrandr.h>
 #include "snap_it.h"
+
+/*
+
+typedef struct {
+	int x, y, width, height;
+} ScreenInfo;
+
+*/
 
 void saveScreenshot(XImage *image, int width, int height) {
 	FILE *fp = fopen("screenshot.ppm", "wb");
@@ -27,109 +36,124 @@ void saveScreenshot(XImage *image, int width, int height) {
 	fclose(fp);
 }
 
+void buttonPress(XEvent event, int *x1, int *y1, int *breakCondition, int *terminate) {
+	switch(event.xbutton.button){
+		case Button1:
+			*x1 = event.xbutton.x;
+			*y1 = event.xbutton.y;
+			break;
+
+		case Button3:
+			*breakCondition = 1;
+			*terminate = 1;
+			break;
+	}
+}
+
+void buttonRelease(Display *display, Window root, XEvent event, int x1, int y1,
+		   int *x, int *y, int *width, int *height, int *breakCondition) {
+
+	switch(event.xbutton.button) {
+		case Button1:
+			int x2 = event.xbutton.x;
+			int y2 = event.xbutton.y;
+		
+			if (x1 == x2 && y1 == y2) {
+				Window parent, child;
+				int rx, ry, wx, wy;
+				unsigned int mr;
+				XWindowAttributes windowAttributes;
+
+				XQueryPointer(display, root, &parent, &child, 
+							&rx, &ry, &wx, &wy, &mr);
+
+				XGetWindowAttributes(display, child, &windowAttributes);
+
+				*x = windowAttributes.x;
+				*y = windowAttributes.y;
+				*width = windowAttributes.width;
+				*height = windowAttributes.height;
+			} else {
+
+				*width = abs(x1-x2);
+				*height = abs(y1-y2);
+				*x = x1 < x2 ? x1 : x2;
+				*y = y1 < y2 ? y1 : y2;
+
+			}
+
+			*breakCondition = 1;
+			break;
+
+	}
+
+}
+
+void keyPress(Display *display, Window root, XEvent event, int *x, int *y, int *width, int *height, 
+								int *breakCondition, int *terminate) {
+
+	KeySym key = XLookupKeysym(&event.xkey, 0);
+
+	switch(key){
+		case XK_Escape:
+			*breakCondition = 1;
+			*terminate = 1;
+			break;
+
+		case XK_0 ... XK_9:
+			int screenNumber = key - (XK_0-1);
+
+			XRRScreenResources *screenResources = XRRGetScreenResources(display, root);
+
+			XRRCrtcInfo *crtcInfo = XRRGetCrtcInfo(display, screenResources, screenResources->crtcs[screenNumber]);
+
+			*x = crtcInfo->x;
+			*y = crtcInfo->y;
+			*width = crtcInfo->width;
+			*height = crtcInfo->height;
+
+			//currently it seems like there is an issue retriving crtcinfo
+			printf("(X:Y:W:H) (%d:%d:%d:%d)\n",crtcInfo->x,crtcInfo->y,crtcInfo->width,crtcInfo->height);
+
+			*breakCondition = 1;
+
+			break;
+	}
+
+}
+ 
 void calculateXY(Display *display, Window root, int *x, int *y, int *width, int *height) {
-	int x1 = 0, x2 = 0, y1 = 0, y2 = 0, breakCondition = 1;
+	int x1 = 0, y1 = 0, breakCondition = 0, terminate = 0;
 
 	XGrabPointer(display, root, False, ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
 						GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
 
 	XGrabKeyboard(display, root, False, GrabModeAsync, GrabModeAsync, CurrentTime);
 
-	while(breakCondition){
+	while(!breakCondition){
 		XEvent event;
 		XNextEvent(display, &event);
 
 		if(event.type == ButtonPress){
-
-			switch(event.xbutton.button){
-				case Button1:
-					x1 = event.xbutton.x;
-					y1 = event.xbutton.y;
-					break;
-
-				case Button3:
-					XUngrabPointer(display, CurrentTime);
-					XUngrabKeyboard(display, CurrentTime);
-					XCloseDisplay(display);
-					exit(0);
-					break;	
-			}
+			buttonPress(event, &x1, &y1, &breakCondition, &terminate);
+		} else if(event.type == ButtonRelease){
+			buttonRelease(display, root, event, x1, y1, x, y, width, height, &breakCondition);
+		} else if(event.type == KeyPress){
+			keyPress(display, root, event, x, y, width, height, &breakCondition, &terminate);
 		}
-
-		else if(event.type == ButtonRelease){
-
-			switch(event.xbutton.button){
-				case Button1:
-					x2 = event.xbutton.x;
-					y2 = event.xbutton.y;
-
-					if(x1 == x2 && y1 == y2){
-						Window parent, child;
-						int rx, ry, wx, wy;
-						unsigned int mr;
-						XWindowAttributes windowAttributes;
-
-						XQueryPointer(display, root, &parent, &child, 
-								&rx, &ry, &wx, &wy, &mr);
-	
-						XGetWindowAttributes(display, child, &windowAttributes);
-			
-						*x = windowAttributes.x;
-						*y = windowAttributes.y;
-						*width = windowAttributes.width;
-						*height = windowAttributes.height;
-					} else{
-						*width = abs(x2-x1);
-						*height = abs(y2-y1);
-						*x = x1 < x2 ? x1 : x2;
-						*y = y1 < y2 ? y1 : y2;
-					}
-					breakCondition = 0;
-					break;
-			}
-		}
-
-		else if(event.type == KeyPress){
-			KeySym key = XLookupKeysym(&event.xkey, 0);
-
-			int numOfScreens = ScreenCount(display);
-
-			printf("Number of screens: %d\n", numOfScreens);
-
-			switch(key){
-				case XK_Escape:
-					XUngrabPointer(display, CurrentTime);
-					XUngrabKeyboard(display, CurrentTime);
-					XCloseDisplay(display);
-					exit(0);
-					break;
-
-				case XK_0 ... XK_9:
-					int screenNumber = key - (XK_0-1);
-					Screen *screen = XScreenOfDisplay(display, screenNumber);
-					Window window = XRootWindowOfScreen(screen);
-					XWindowAttributes windowAttributes;
-					XGetWindowAttributes(display, window, &windowAttributes);
-
-					*x = windowAttributes.x;
-					*y = windowAttributes.y;
-					*width = windowAttributes.width;
-					*height = windowAttributes.height;
-
-					breakCondition = 0;
-
-					break;
-			}
-		}
-
 	}
 
 	XUngrabPointer(display, CurrentTime);
 	XUngrabKeyboard(display, CurrentTime);
 
+	if(terminate) {
+		XCloseDisplay(display);
+		exit(0);
+	}
+
 }
 
-void takeScreenshot() {
+int main(int argc, char *argv[]) {
 
 	Display *display;
 	int screen, x = 0, y = 0, width = 0, height = 0;
@@ -160,18 +184,6 @@ void takeScreenshot() {
 
 	XDestroyImage(image);
 	XCloseDisplay(display);
-
-}
-
-int main(int argc, char *argv[]) {
-	/*
-	if (argc > 2 || strncmp(argv[1], "snap", 4) != 0){
-		fprintf(stderr, "issues with argument passed\n");
-		return 1;
-	}
-	*/
-
-	takeScreenshot();
 
 	return 0;
 }
