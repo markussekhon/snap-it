@@ -49,7 +49,7 @@ void buttonPress(XEvent event, int *x1, int *y1, int *breakCondition, int *termi
 }
 
 void buttonRelease(Display *display, Window root, XEvent event, int x1, int y1,
-                   int *x, int *y, int *width, int *height, int *breakCondition) {
+                   ScreenInfo *info, int *breakCondition) {
     switch(event.xbutton.button) {
         case Button1:
             int x2 = event.xbutton.x;
@@ -66,22 +66,22 @@ void buttonRelease(Display *display, Window root, XEvent event, int x1, int y1,
 
                 XGetWindowAttributes(display, child, &windowAttributes);
 
-                *x = windowAttributes.x;
-                *y = windowAttributes.y;
-                *width = windowAttributes.width;
-                *height = windowAttributes.height;
+                info->x = windowAttributes.x;
+                info->y = windowAttributes.y;
+                info->width = windowAttributes.width;
+                info->height = windowAttributes.height;
             } else {
-                *width = abs(x1-x2);
-                *height = abs(y1-y2);
-                *x = x1 < x2 ? x1 : x2;
-                *y = y1 < y2 ? y1 : y2;
+                info->width = abs(x1-x2);
+                info->height = abs(y1-y2);
+                info->x = x1 < x2 ? x1 : x2;
+                info->y = y1 < y2 ? y1 : y2;
             }
             *breakCondition = 1;
             break;
     }
 }
 
-void keyPress(Display *display, Window root, XEvent event, int *x, int *y, int *width, int *height, 
+void keyPress(Display *display, Window root, XEvent event, ScreenInfo *info, 
               int *breakCondition, int *terminate) {
     KeySym key = XLookupKeysym(&event.xkey, 0);
 
@@ -92,16 +92,17 @@ void keyPress(Display *display, Window root, XEvent event, int *x, int *y, int *
             break;
 
         case XK_0 ... XK_9:
+            //this makes it so user can assume 1 indexing instead of 0
             int screenNumber = key - (XK_1);
 
             XRRScreenResources *screenResources = XRRGetScreenResources(display, root);
             RRCrtc crtc = screenResources->crtcs[screenNumber];
             XRRCrtcInfo *crtcInfo = XRRGetCrtcInfo(display, screenResources, crtc);
 
-            *x = crtcInfo->x;
-            *y = crtcInfo->y;
-            *width = crtcInfo->width;
-            *height = crtcInfo->height;
+            info->x = crtcInfo->x;
+            info->y = crtcInfo->y;
+            info->width = crtcInfo->width;
+            info->height = crtcInfo->height;
 
             XRRFreeCrtcInfo(crtcInfo);
             

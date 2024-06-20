@@ -10,7 +10,7 @@
 #include "utilities.h"
 #include "snap_it.h"
  
-void calculateRegion(Display *display, Window root, int *x, int *y, int *width, int *height) {
+void calculateRegion(Display *display, Window root, ScreenInfo *info) {
 	int x1 = 0, y1 = 0, breakCondition = 0, terminate = 0;
 
 	XGrabPointer(display, root, False, ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
@@ -24,9 +24,9 @@ void calculateRegion(Display *display, Window root, int *x, int *y, int *width, 
 		if(event.type == ButtonPress){
 			buttonPress(event, &x1, &y1, &breakCondition, &terminate);
 		} else if(event.type == ButtonRelease){
-			buttonRelease(display, root, event, x1, y1, x, y, width, height, &breakCondition);
+			buttonRelease(display, root, event, x1, y1, info, &breakCondition);
 		} else if(event.type == KeyPress){
-			keyPress(display, root, event, x, y, width, height, &breakCondition, &terminate);
+			keyPress(display, root, event, info, &breakCondition, &terminate);
 		}
 	}
 
@@ -40,7 +40,7 @@ void calculateRegion(Display *display, Window root, int *x, int *y, int *width, 
 }
 
 int main(int argc, char *argv[]) {
-	int x = 0, y = 0, width = 0, height = 0;
+	//int x = 0, y = 0, width = 0, height = 0;
 
 	Display *display = XOpenDisplay(NULL);
 
@@ -53,10 +53,11 @@ int main(int argc, char *argv[]) {
 	Window root = RootWindow(display, screen);
 
 
-	//ScreenInfo screenInfo;
-	calculateRegion(display, root, &x, &y, &width, &height);
+	ScreenInfo info;
+	calculateRegion(display, root, &info);
 
-	XImage *image = XGetImage(display, root, x, y, width, height, AllPlanes, ZPixmap);
+	XImage *image = XGetImage(display, root, info.x, info.y, info.width, info.height, 
+			   AllPlanes, ZPixmap);
 
 	if(image == NULL){
 		fprintf(stderr, "Unable to capture image.\n");
@@ -70,7 +71,7 @@ int main(int argc, char *argv[]) {
 	char filename[100];
 	snprintf(filename, sizeof(filename), "screenshot_%s.png", screenshotTime);
 
-	saveScreenshot(image, width, height, filename);
+	saveScreenshot(image, info.width, info.height, filename);
 
 	XDestroyImage(image);
 	XCloseDisplay(display);
