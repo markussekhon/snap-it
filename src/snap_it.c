@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/Xrandr.h>
@@ -73,6 +77,10 @@ int main(int argc, char *argv[]) {
 	snprintf(filename, sizeof(filename), "%s/snap@%s.png", screenshotDir, screenshotTime);
 
 	saveScreenshot(image, info.width, info.height, filename);
+
+	char command[150];
+	snprintf(command, sizeof(command), "xclip -selection clipboard -t image/png -i %s", filename);
+	system(command);
 
 	XDestroyImage(image);
 	XCloseDisplay(display);
