@@ -40,7 +40,6 @@ void calculateRegion(Display *display, Window root, ScreenInfo *info) {
 }
 
 int main(int argc, char *argv[]) {
-	//int x = 0, y = 0, width = 0, height = 0;
 
 	Display *display = XOpenDisplay(NULL);
 
@@ -51,7 +50,6 @@ int main(int argc, char *argv[]) {
 
 	int screen = DefaultScreen(display);
 	Window root = RootWindow(display, screen);
-
 
 	ScreenInfo info;
 	calculateRegion(display, root, &info);
@@ -68,8 +66,11 @@ int main(int argc, char *argv[]) {
 	char screenshotTime[50];
 	getCurrentTimeFormatted(screenshotTime, sizeof(screenshotTime));
 
+	const char *screenshotDir = "snaps";
+	createDirectory(screenshotDir);
+
 	char filename[100];
-	snprintf(filename, sizeof(filename), "screenshot_%s.png", screenshotTime);
+	snprintf(filename, sizeof(filename), "%s/snap@%s.png", screenshotDir, screenshotTime);
 
 	saveScreenshot(image, info.width, info.height, filename);
 

@@ -14,6 +14,7 @@ void buttonRelease(Display *display, Window root, XEvent event, int x1, int y1,
                    ScreenInfo *info, int *breakCondition);
 void keyPress(Display *display, Window root, XEvent event, ScreenInfo *info, 
               int *breakCondition, int *terminate);
+void createDirectory(const char *path);
 
 #endif // UTILITIES_H
 

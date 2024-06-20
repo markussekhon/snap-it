@@ -1,11 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/Xrandr.h>
 #include "stb_image_write.h"
 #include "utilities.h"
+
+void createDirectory(const char *path) {
+    struct stat st = {0};
+    if (stat(path, &st) == -1) {
+        mkdir(path, 0700);
+    }
+}
 
 void getCurrentTimeFormatted(char *buffer, size_t buffer_size) {
     time_t now = time(NULL);
