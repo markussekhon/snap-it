@@ -15,6 +15,7 @@ typedef struct {
 */
 
 void saveScreenshot(XImage *image, int width, int height) {
+	
 	FILE *fp = fopen("screenshot.ppm", "wb");
 	
 	if(fp == NULL){
@@ -37,6 +38,7 @@ void saveScreenshot(XImage *image, int width, int height) {
 }
 
 void buttonPress(XEvent event, int *x1, int *y1, int *breakCondition, int *terminate) {
+	
 	switch(event.xbutton.button){
 		case Button1:
 			*x1 = event.xbutton.x;
@@ -74,24 +76,19 @@ void buttonRelease(Display *display, Window root, XEvent event, int x1, int y1,
 				*width = windowAttributes.width;
 				*height = windowAttributes.height;
 			} else {
-
 				*width = abs(x1-x2);
 				*height = abs(y1-y2);
 				*x = x1 < x2 ? x1 : x2;
 				*y = y1 < y2 ? y1 : y2;
-
 			}
-
 			*breakCondition = 1;
 			break;
-
 	}
-
 }
 
 void keyPress(Display *display, Window root, XEvent event, int *x, int *y, int *width, int *height, 
 								int *breakCondition, int *terminate) {
-
+	
 	KeySym key = XLookupKeysym(&event.xkey, 0);
 
 	switch(key){
@@ -101,25 +98,22 @@ void keyPress(Display *display, Window root, XEvent event, int *x, int *y, int *
 			break;
 
 		case XK_0 ... XK_9:
-			int screenNumber = key - (XK_0-1);
+			int screenNumber = key - (XK_1);
 
 			XRRScreenResources *screenResources = XRRGetScreenResources(display, root);
-
-			XRRCrtcInfo *crtcInfo = XRRGetCrtcInfo(display, screenResources, screenResources->crtcs[screenNumber]);
+			RRCrtc crtc = screenResources->crtcs[screenNumber];
+			XRRCrtcInfo *crtcInfo = XRRGetCrtcInfo(display, screenResources, crtc);
 
 			*x = crtcInfo->x;
 			*y = crtcInfo->y;
 			*width = crtcInfo->width;
 			*height = crtcInfo->height;
 
-			//currently it seems like there is an issue retriving crtcinfo
-			printf("(X:Y:W:H) (%d:%d:%d:%d)\n",crtcInfo->x,crtcInfo->y,crtcInfo->width,crtcInfo->height);
-
+			XRRFreeCrtcInfo(crtcInfo);
+			
 			*breakCondition = 1;
-
 			break;
 	}
-
 }
  
 void calculateXY(Display *display, Window root, int *x, int *y, int *width, int *height) {
